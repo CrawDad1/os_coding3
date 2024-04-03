@@ -1,5 +1,8 @@
-# create a representation of a paging system
-# entry point in main()
+"""
+    Create a representation of a paging system. Entry point in main()
+
+    codeauthor : Devon Crafword
+"""
 import os
 from typing import List
 
