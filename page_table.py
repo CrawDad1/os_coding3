@@ -7,6 +7,7 @@ from typing import List
 physical_memory = {}
 
 class memory_manager:
+    """Class for modeling a paging system. """
     addr_length: int
     page_num_length: int
     block_size: int
@@ -15,6 +16,13 @@ class memory_manager:
     page_table: dict
     
     def __init__(self, _addr_length: int = 4, _block_size: int = 1) -> None:
+        """
+            Initializes a new instance of the memory_manager class.
+
+            :param _addr_length: The length of the address in bytes.
+            :param _block_size: The size of a block in bytes.
+            :param _capacity: The capacity of the paging system.
+        """
         self.addr_length = _addr_length
         self.page_num_length = self.addr_length - 2
         self.block_size = _block_size
@@ -23,9 +31,16 @@ class memory_manager:
         self.logical_addresses = []
     
     def divide_block(self, block: str) -> List[str]:
+        """Return a list of sub-block elements of self.block_size from the given block."""
         return [block[i:i+self.block_size] for i in range(0, len(block), self.block_size)]
     
     def save_to_physical_memory(self,  data: str) -> None:
+        """Populates the physical memory with data."""
+
+        # ensure data is str
+        if not isinstance(data, str):
+            data = str(data)
+
         logical_table = self.create_logical_memory(data)
         print("printing addresses for physical memory")
         print(" addr | page_num | offset | phys_addr | block")
@@ -41,6 +56,7 @@ class memory_manager:
             print(f"{addr} | {page_num} | {offset} | {phys_addr} | {block}")
 
     def create_logical_memory(self, data: str) -> dict:
+        """Create logical memory with address and data to prepare for storage."""
         logical_table = {}
         sub_blocks = self.divide_block(data)
         for sub_block in sub_blocks:
@@ -60,8 +76,9 @@ class memory_manager:
         self.logical_addresses.extend([x for x in logical_table.keys()])
         return logical_table
 
-    def translate_logical_address(self) -> str:
-        print("Translating logical address...")
+    def translate_all_logical_address(self) -> str:
+        """Demonstrate how to translate logical addresses to physical addresses."""
+        print("Translating logical addresses...")
         print("logical address| page number | physical address | data")
         for addr in self.logical_addresses:
             page_number = addr[2:][:self.page_num_length]
@@ -71,7 +88,27 @@ class memory_manager:
             print(f" {addr} -> {page_number} -> {physical_addr} -> {data}")
         print()
     
+    def translate_logical_address(self, addr: str) -> str:
+        """Translates a given logical address to physical address and retrieve data block."""
+        if addr not in self.logical_addresses:
+            print("logical address not found")
+            print("Please enter a valid address from the following list:")
+            print(self.logical_addresses)
+            return ""
+
+        # addr found in logical addresses
+        print("logical address found")
+        print("logical address| page number | physical address | data")
+        page_number = addr[2:][:self.page_num_length]
+        offset = addr[2:][self.page_num_length:]
+        physical_addr = self.page_table.get(page_number) + offset
+        data = physical_memory.get(physical_addr)
+        print(f" {addr} -> {page_number} -> {physical_addr} -> '{data}'")
+        return data
+
+    
     def cat(self) -> str:
+        """concatenate all memory values tanslated from logical -> page -> phisical -> data."""
         print("Concatenating memory values...")
         output = ""
         for addr in self.logical_addresses:
@@ -79,11 +116,11 @@ class memory_manager:
             offset = addr[2:][self.page_num_length:]
             physical_addr = self.page_table.get(page_number) + offset
             output += physical_memory.get(physical_addr)
-        
-        print(output)
+        print(output + "\n")
         return output
     
     def print_tables(self) -> None:
+        """Prints the logical, page, and physical memory tables."""
         print("printing logical addresses...")
         print(self.logical_addresses)
         print()
@@ -105,8 +142,26 @@ def main() -> None:
     mmu = memory_manager(4, 4)
     mmu.save_to_physical_memory("this is a big block")
     # mmu.print_tables()
-    mmu.translate_logical_address()
-    mmu.cat()
+    mmu.translate_all_logical_address()
+    print("\n\n Begining input loop...")
+    while True:
+        print("enter an address, or 'cat' to concatenate all memory values, or 'exit' to exit")
+        print("Please enter a valid address from the following list:")
+        print(mmu.logical_addresses)
+        print("\n\n")
+        try:
+            addr = input("Logical address: ")
+            match addr:
+                case "exit":
+                    break
+                case 'cat':
+                    mmu.cat()
+                case _:
+                    mmu.translate_logical_address(addr)
+            print("\n")
+        except ValueError:
+            print("value error. please try again")
+            continue
 
 if __name__ == "__main__":
     main()
